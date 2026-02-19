@@ -1,0 +1,20 @@
+# Linear Import Plan
+
+## Epics (5)
+1. Player Elimination (MVP) (`epics/epic-mvp-elimination.md`)
+2. Game Session Management (MVP) (`epics/epic-mvp-game-session-management.md`)
+3. Question & Answer UI (MVP) (`epics/epic-mvp-question-and-answer-ui.md`)
+4. Question Service (MVP) (`epics/epic-mvp-question-service.md`)
+5. Scoring & Results (MVP) (`epics/epic-mvp-scoring-and-results.md`)
+
+## Stories (10)
+1. Player Elimination (`stories/story-player-elimination-US-GF5.md`)
+2. Player Sign-up (`stories/story-player-signup-US-G1.md`)
+3. Review Game (`stories/story-review-game-US-GF7.md`)
+4. See Answer Feedback (`stories/story-see-answer-feedback-US-GF6.md`)
+5. See Final Score (`stories/story-see-final-score.md`)
+6. See Question (`stories/story-see-question-US-GF1.md`)
+7. See Timer (`stories/story-see-timer-US-GF2.md`)
+8. Service Retrieves Question (`stories/story-service-retrieves-question-US-Q1.md`)
+9. Start Solo Game (`stories/story-start-solo-game-US-G3.md`)
+10. Submit Answer (`stories/story-submit-answer-US-GF3.md`)
