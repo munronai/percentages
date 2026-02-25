@@ -70,7 +70,9 @@ To allow a user to successfully start, play, and complete a solo game session.
 ## User Stories
 <!-- List of user stories that make up this epic -->
 
-- [ ] As a single player, I want to be able to start a game session by myself so I can practice or test my skills. - US-G3 - [Planned]
+- [ ] As a single player, I want a clear "Start Solo Game" button on the home screen so I can quickly begin my quiz. - US-G3.1 - [Planned]
+- [ ] As the application, I want to initialize a game session and fetch the first question using a single efficient API call so the player can start without delay. - US-G3.2 - [Planned]
+- [ ] As a player, I want my game progress to be saved locally so that I can resume my session if I accidentally refresh the page or navigate away. - US-G3.3 - [Planned]
 - [ ] As a player, I want sign up for a new game session so I can participate in the quiz. - US-G1 - [Planned]
 
 **Total Story Points**: [X] (estimated)
@@ -137,7 +139,9 @@ To allow a user to successfully start, play, and complete a solo game session.
 
 **Stories**:
 - US-G1
-- US-G3
+- US-G3.1
+- US-G3.2
+- US-G3.3
 
 ---
 
