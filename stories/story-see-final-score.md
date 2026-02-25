@@ -74,7 +74,7 @@ MVP / Release 1
 - [ ] Question: What happens if a user wins the game (answers the 1% question)? Is there a special "You Won!" message on the results screen? (For MVP, we can treat it the same as any other end-of-game score screen).
 
 ## Related Work
-- **Related stories**: US-GF7 (Review Game) is accessed from this screen. US-G3 (Start Solo Game) is the destination for the "Play Again" button.
+- **Related stories**: US-GF7 (Review Game) is accessed from this screen. US-G3.1 (Start Solo Game) is the destination for the "Play Again" button.
 - **Related epics**: Scoring & Results (MVP)
 - **Documentation**: [Link to PRD section on Scoring]
 

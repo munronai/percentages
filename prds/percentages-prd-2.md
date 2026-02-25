@@ -283,7 +283,9 @@ The Question Service will expose the following key endpoints:
 |---|---|---|---|
 | US-G1 | As a player, I want to sign up for a new game session so I can participate in the quiz. | High | G-01, UI-01 |
 | US-G2 | As a host, I want to trigger the game start once all intended players are present so the quiz can begin. | High | G-01, UI-05 |
-| US-G3 | As a single player, I want to be able to start a game session by myself so I can practice or test my skills. | Medium | G-01 |
+| US-G3.1 | As a single player, I want a clear "Start Solo Game" button on the home screen so I can quickly begin my quiz. | High | G-01 |
+| US-G3.2 | As the application, I want to initialize a game session and fetch the first question using a single efficient API call so the player can start without delay. | High | G-01 |
+| US-G3.3 | As a player, I want my game progress to be saved locally so that I can resume my session if I accidentally refresh the page or navigate away. | High | G-01 |
 | US-G4 | As a player, I want to browse a list of public games so I can join one that is in progress. | Medium | UI-01 |
 
 ### Gameplay Flow

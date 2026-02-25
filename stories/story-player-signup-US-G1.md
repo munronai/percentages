@@ -68,14 +68,14 @@ MVP / Release 1
 
 ## Dependencies & Blockers
 - **Depends on**: None.
-- **Blocked by**: None. This story is a blocker for US-G3.
+- **Blocked by**: None. This story is a blocker for US-G3.1.
 
 ## Questions & Assumptions
 - [ ] Assumption: For the MVP, a locally-stored, non-unique display name is sufficient for user identity.
 - [ ] Question: What are the validation rules for a display name (length, characters)?
 
 ## Related Work
-- **Related stories**: US-G3 (Start Solo Game) depends on this.
+- **Related stories**: US-G3.1 (Start Solo Game) depends on this.
 - **Related epics**: Game Session Management (MVP)
 - **Documentation**: [Link to PRD section on User Identity]
 
