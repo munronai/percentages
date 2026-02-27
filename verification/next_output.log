@@ -1,0 +1,24 @@
+
+> percentages-next@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 1560ms
+○ Compiling / ...
+ GET / 200 in 8.9s (compile: 8.4s, render: 405ms)
+ GET /grid.svg 404 in 1552ms (compile: 1285ms, render: 268ms)
+ GET / 200 in 106ms (compile: 8ms, render: 98ms)
+ GET /grid.svg 404 in 90ms (compile: 13ms, render: 77ms)
+ GET /home 200 in 878ms (compile: 811ms, render: 67ms)
+ GET /game/solo 200 in 627ms (compile: 552ms, render: 75ms)
+ GET /api/questions?percentage=90&next=true 200 in 717ms (compile: 687ms, render: 30ms)
+ GET /api/questions?percentage=90&next=true 200 in 24ms (compile: 7ms, render: 17ms)

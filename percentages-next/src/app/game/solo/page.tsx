@@ -58,7 +58,7 @@ export default function GamePage() {
     }, []);
 
     useEffect(() => {
-        if (!loading && question && timeLeft > 0) {
+        if (!loading && question) {
             const timerId = setInterval(() => {
                 setTimeLeft((prev) => {
                     const newTime = prev - 1;
@@ -74,12 +74,7 @@ export default function GamePage() {
             }, 1000);
             return () => clearInterval(timerId);
         }
-    }, [loading, question, timeLeft, sessionId]);
-
-    const handleQuit = () => {
-        clearSession();
-        router.push('/');
-    };
+    }, [loading, question]);
 
     if (loading) {
         return (
