@@ -9,11 +9,8 @@ export default function StartGameButton() {
     const [isSignedUp, setIsSignedUp] = useState(false);
 
     useEffect(() => {
-        const playerName = localStorage.getItem('playerName');
-        // Use setTimeout to avoid synchronous state update warning during effect
-        setTimeout(() => {
-            setIsSignedUp(!!playerName);
-        }, 0);
+        const playerName = localStorage.getItem("playerName");
+        setIsSignedUp(!!playerName);
     }, []);
 
     const [showTooltip, setShowTooltip] = useState(false);
