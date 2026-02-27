@@ -36,13 +36,19 @@ export default function GamePage() {
     }, []);
 
     useEffect(() => {
-        if (!loading && question && timeLeft > 0) {
+        if (!loading && question) {
             const timerId = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
+                setTimeLeft((prev) => {
+                    if (prev <= 0) {
+                        clearInterval(timerId);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             }, 1000);
             return () => clearInterval(timerId);
         }
-    }, [loading, question, timeLeft]);
+    }, [loading, question]);
 
     if (loading) {
         return (
