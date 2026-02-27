@@ -10,6 +10,7 @@ export default function StartGameButton() {
 
     useEffect(() => {
         const playerName = localStorage.getItem("playerName");
+        // eslint-disable-next-line
         setIsSignedUp(!!playerName);
     }, []);
 
