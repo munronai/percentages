@@ -1,5 +1,4 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import GamePage from './page';
 
 // Mock the global fetch

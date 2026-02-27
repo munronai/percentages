@@ -16,11 +16,29 @@ export default function SignupForm() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) {
+        const trimmedName = name.trim();
+
+        if (!trimmedName) {
             setError('Name is required');
             return;
         }
-        localStorage.setItem('playerName', name);
+
+        if (trimmedName.length < 3) {
+            setError('Name must be at least 3 characters long');
+            return;
+        }
+
+        if (trimmedName.length > 15) {
+            setError('Name must be at most 15 characters long');
+            return;
+        }
+
+        if (!/^[a-zA-Z0-9\s]+$/.test(trimmedName)) {
+            setError('Name can only contain letters, numbers, and spaces');
+            return;
+        }
+
+        localStorage.setItem('playerName', trimmedName);
         router.push('/home');
     };
 
@@ -40,6 +58,7 @@ export default function SignupForm() {
                         className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                         placeholder="e.g. Alex"
                         value={name}
+                        maxLength={15}
                         onChange={(e) => {
                             setName(e.target.value);
                             if (error) setError('');
