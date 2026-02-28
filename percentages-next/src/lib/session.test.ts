@@ -42,8 +42,10 @@ describe('Game Session Utility', () => {
 
         it('should return null if the session data is corrupted/invalid JSON', () => {
             localStorage.setItem('game_session', 'invalid JSON {');
-            // Can optionally spy on console.error if we want
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             expect(getSession()).toBeNull();
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
         });
     });
 

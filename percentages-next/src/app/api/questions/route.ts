@@ -19,5 +19,15 @@ export async function GET(request: NextRequest) {
         }, { status: 200 });
     }
 
+    if (percentage === '80' && next === 'true') {
+        return NextResponse.json({
+            questionId: "q-80-001",
+            text: "What do you see in this picture?",
+            imageUrl: "https://example.com/mock-image.png",
+            correctAnswer: "Hidden Face",
+            difficulty: 80
+        }, { status: 200 });
+    }
+
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
