@@ -6,10 +6,19 @@ export interface Question {
     difficulty: number;
 }
 
+export interface SessionHistoryItem {
+    question: Question;
+    submittedAnswer: string | null;
+    isCorrect: boolean;
+}
+
 export interface GameSession {
     sessionId: string;
     question: Question;
     timeLeft: number;
+    score: number;
+    history: SessionHistoryItem[];
+    status: 'playing' | 'ended';
     timestamp?: number;
 }
 

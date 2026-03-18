@@ -23,9 +23,29 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             questionId: "q-80-001",
             text: "What do you see in this picture?",
-            imageUrl: "https://example.com/mock-image.png",
+            imageUrl: "https://placehold.co/600x400/purple/white?text=Hidden+Face+Puzzle",
             correctAnswer: "Hidden Face",
             difficulty: 80
+        }, { status: 200 });
+    }
+
+    if (percentage === '70' && next === 'true') {
+        return NextResponse.json({
+            questionId: "q-70-001",
+            text: "Which of these is NOT a logic puzzle?",
+            imageUrl: null,
+            correctAnswer: "Crossword",
+            difficulty: 70
+        }, { status: 200 });
+    }
+
+    if (percentage === '10' && next === 'true') {
+        return NextResponse.json({
+            questionId: "q-10-001",
+            text: "The ultimate logic puzzle?",
+            imageUrl: null,
+            correctAnswer: "Answer",
+            difficulty: 10
         }, { status: 200 });
     }
 

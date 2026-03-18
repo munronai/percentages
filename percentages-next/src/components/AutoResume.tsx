@@ -10,7 +10,8 @@ export default function AutoResume() {
     useEffect(() => {
         // Run once on mount to check for an existing session
         const session = getSession();
-        if (session) {
+        // Only auto-resume if the game is still active
+        if (session && session.status === 'playing') {
             router.push('/game/solo');
         }
     }, [router]);

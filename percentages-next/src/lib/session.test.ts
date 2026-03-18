@@ -16,6 +16,9 @@ describe('Game Session Utility', () => {
             difficulty: 90
         },
         timeLeft: 45,
+        score: 0,
+        history: [],
+        status: 'playing',
         timestamp: Date.now()
     };
 

@@ -33,7 +33,7 @@ describe('GET /api/questions', () => {
         expect(data).toEqual({
             questionId: "q-80-001",
             text: "What do you see in this picture?",
-            imageUrl: "https://example.com/mock-image.png",
+            imageUrl: "https://placehold.co/600x400/purple/white?text=Hidden+Face+Puzzle",
             correctAnswer: "Hidden Face",
             difficulty: 80
         });

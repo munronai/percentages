@@ -3,18 +3,35 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getSession, clearSession } from "@/lib/session";
 
 export default function StartGameButton() {
     const router = useRouter();
     const [isSignedUp, setIsSignedUp] = useState(false);
+    const [hasActiveSession, setHasActiveSession] = useState(false);
 
     useEffect(() => {
         const playerName = localStorage.getItem("playerName");
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsSignedUp(!!playerName);
+
+        const session = getSession();
+        setHasActiveSession(!!session && session.status === 'playing');
     }, []);
 
     const [showTooltip, setShowTooltip] = useState(false);
+
+    const handleStart = () => {
+        const session = getSession();
+        // If there's an ended session, clear it before starting new
+        if (session && session.status === 'ended') {
+            clearSession();
+        }
+        router.push('/game/solo');
+    };
+
+    const handleResume = () => {
+        router.push('/game/solo');
+    };
 
     return (
         <div className="flex flex-col items-center gap-4 w-full max-w-sm">
@@ -26,18 +43,28 @@ export default function StartGameButton() {
                 className="relative inline-block w-full"
                 tabIndex={!isSignedUp ? 0 : -1} // Allow focus on wrapper if button is disabled
             >
-                <button
-                    disabled={!isSignedUp}
-                    aria-describedby={!isSignedUp ? "signup-tooltip" : undefined}
-                    onClick={() => router.push('/game/solo')}
-                    className={`w-full py-4 px-8 font-bold text-lg rounded-xl shadow-xl transform transition-all duration-200 ring-1 ring-white/20
-                        ${isSignedUp
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white hover:scale-[1.02] active:scale-[0.98]'
-                            : 'bg-gray-700 text-gray-400 cursor-not-allowed opacity-75'
-                        }`}
-                >
-                    Start Solo Game
-                </button>
+                {hasActiveSession ? (
+                    <button
+                        onClick={handleResume}
+                        className="w-full py-4 px-8 font-bold text-lg rounded-xl shadow-xl transform transition-all duration-200 ring-1 ring-white/20 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        Resume Game
+                    </button>
+                ) : (
+                    <button
+                        disabled={!isSignedUp}
+                        aria-describedby={!isSignedUp ? "signup-tooltip" : undefined}
+                        onClick={handleStart}
+                        className={`w-full py-4 px-8 font-bold text-lg rounded-xl shadow-xl transform transition-all duration-200 ring-1 ring-white/20
+                            ${isSignedUp
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white hover:scale-[1.02] active:scale-[0.98]'
+                                : 'bg-gray-700 text-gray-400 cursor-not-allowed opacity-75'
+                            }`}
+                    >
+                        Start Solo Game
+                    </button>
+                )}
+                
                 {showTooltip && (
                     <div
                         id="signup-tooltip"

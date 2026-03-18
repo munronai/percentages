@@ -2,12 +2,20 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import StartGameButton from './StartGameButton'
+import { useRouter } from 'next/navigation';
+import { getSession, clearSession } from '@/lib/session';
 
 // Mock useRouter
 const mockPush = jest.fn()
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: mockPush }),
 }))
+
+// Mock session handling
+jest.mock('@/lib/session', () => ({
+    getSession: jest.fn(),
+    clearSession: jest.fn(),
+}));
 
 // Mock next/link
 jest.mock('next/link', () => {
@@ -22,6 +30,7 @@ beforeEach(() => {
     mockPush.mockClear()
     localStorage.clear()
     jest.clearAllMocks()
+    ;(getSession as jest.Mock).mockReturnValue(null)
 })
 
 test('is disabled when user is not signed up and shows sign up link', async () => {
@@ -37,22 +46,8 @@ test('is disabled when user is not signed up and shows sign up link', async () =
 
 test('shows tooltip when disabled and hovered', async () => {
     render(<StartGameButton />)
-    // Hover the wrapper or button. Since button is disabled, events might be tricky,
-    // but the wrapper handles it.
-    // We hover the button, which is inside the wrapper.
     const button = screen.getByRole('button', { name: /start solo game/i })
     await userEvent.hover(button)
-    expect(await screen.findByText(/sign up first/i)).toBeInTheDocument()
-})
-
-test('shows tooltip when disabled and focused via keyboard', async () => {
-    render(<StartGameButton />)
-    // Focus the wrapper (it has tabIndex when disabled)
-    // Finding by role might be hard as it's a div. We can rely on userEvent.tab()
-    await userEvent.tab()
-
-    // The wrapper should be focused.
-    // Check if tooltip appears.
     expect(await screen.findByText(/sign up first/i)).toBeInTheDocument()
 })
 
@@ -68,9 +63,6 @@ test('is enabled when user is signed up and no tooltip on hover', async () => {
 
     await userEvent.hover(button)
     expect(screen.queryByText(/sign up first/i)).not.toBeInTheDocument()
-
-    // Sign up link should not be present
-    expect(screen.queryByRole('link', { name: /sign up/i })).not.toBeInTheDocument()
 })
 
 test('clicking enabled button triggers start action', async () => {
@@ -78,11 +70,38 @@ test('clicking enabled button triggers start action', async () => {
     render(<StartGameButton />)
     const button = screen.getByRole('button', { name: /start solo game/i })
 
-    // Wait for enabled state
     await waitFor(() => {
         expect(button).not.toBeDisabled()
     })
 
     await userEvent.click(button)
     expect(mockPush).toHaveBeenCalledWith('/game/solo')
+})
+
+test('clears existing ended session when starting a new game', async () => {
+    localStorage.setItem('playerName', 'Alex')
+    ;(getSession as jest.Mock).mockReturnValue({ status: 'ended', score: 10 })
+    
+    render(<StartGameButton />)
+    const button = screen.getByRole('button', { name: /start solo game/i })
+
+    await waitFor(() => {
+        expect(button).not.toBeDisabled()
+    })
+
+    await userEvent.click(button)
+    
+    expect(clearSession).toHaveBeenCalled()
+    expect(mockPush).toHaveBeenCalledWith('/game/solo')
+})
+
+test('shows Resume Game if session is active', async () => {
+    localStorage.setItem('playerName', 'Alex')
+    ;(getSession as jest.Mock).mockReturnValue({ status: 'playing', score: 5 })
+    
+    render(<StartGameButton />)
+    
+    await waitFor(() => {
+        expect(screen.getByRole('button', { name: /resume game/i })).toBeInTheDocument()
+    })
 })

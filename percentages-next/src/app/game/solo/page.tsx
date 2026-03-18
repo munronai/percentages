@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSession, saveSession, clearSession } from "@/lib/session";
+import { getSession, saveSession, clearSession, SessionHistoryItem } from "@/lib/session";
 
 interface Question {
     questionId: string;
@@ -20,6 +20,8 @@ export default function GamePage() {
     const [question, setQuestion] = useState<Question | null>(null);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState(60);
+    const [score, setScore] = useState(0);
+    const [history, setHistory] = useState<SessionHistoryItem[]>([]);
     const [answer, setAnswer] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,9 +34,15 @@ export default function GamePage() {
             const existingSession = getSession();
 
             if (existingSession) {
+                if (existingSession.status === 'ended') {
+                    router.push('/game/solo/results');
+                    return;
+                }
                 setSessionId(existingSession.sessionId);
                 setQuestion(existingSession.question);
                 setTimeLeft(existingSession.timeLeft);
+                setScore(existingSession.score || 0);
+                setHistory(existingSession.history || []);
                 setLoading(false);
                 return;
             }
@@ -50,7 +58,10 @@ export default function GamePage() {
                     saveSession({
                         sessionId: newSessionId,
                         question: data,
-                        timeLeft: 60
+                        timeLeft: 60,
+                        score: 0,
+                        history: [],
+                        status: 'playing'
                     });
                 } else {
                     console.error("Failed to fetch question");
@@ -63,7 +74,7 @@ export default function GamePage() {
         };
 
         initGame();
-    }, []);
+    }, [router]);
 
     // TimeOut Effect (GF6 Trigger)
     useEffect(() => {
@@ -71,11 +82,31 @@ export default function GamePage() {
             setFeedback('timeOut');
             if (question) {
                 setBackendCorrectAnswer(question.correctAnswer);
+                
+                // Record timeout in history
+                const historyItem: SessionHistoryItem = {
+                    question,
+                    submittedAnswer: null,
+                    isCorrect: false
+                };
+                const newHistory = [...history, historyItem];
+                setHistory(newHistory);
+                
+                if (sessionId) {
+                    saveSession({
+                        sessionId,
+                        question,
+                        timeLeft: 0,
+                        score,
+                        history: newHistory,
+                        status: 'ended'
+                    });
+                }
             }
         }
-    }, [timeLeft, feedback, isSubmitting, question]);
+    }, [timeLeft, feedback, isSubmitting, question, history, sessionId, score]);
 
-    // Elimination Routing Effect (GF5)
+    // Transition Effect (GF5 / Progression)
     useEffect(() => {
         if (feedback === 'incorrect' || feedback === 'timeOut') {
             const timer = setTimeout(() => {
@@ -83,10 +114,21 @@ export default function GamePage() {
             }, 3000);
             return () => clearTimeout(timer);
         }
+
+        if (feedback === 'correct') {
+            const timer = setTimeout(() => {
+                // UI transition after 3s delay
+                setFeedback('none');
+                setAnswer("");
+                setTimeLeft(60);
+                // question state was already updated in handleSubmit
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
     }, [feedback, router]);
 
     useEffect(() => {
-        if (!loading && question && timeLeft > 0) {
+        if (!loading && question && timeLeft > 0 && feedback === 'none') {
             const timerId = setInterval(() => {
                 setTimeLeft((prev) => {
                     const newTime = prev - 1;
@@ -94,7 +136,10 @@ export default function GamePage() {
                         saveSession({
                             sessionId,
                             question,
-                            timeLeft: newTime
+                            timeLeft: newTime,
+                            score,
+                            history,
+                            status: 'playing'
                         });
                     }
                     return newTime;
@@ -102,7 +147,7 @@ export default function GamePage() {
             }, 1000);
             return () => clearInterval(timerId);
         }
-    }, [loading, question, timeLeft, sessionId]);
+    }, [loading, question, timeLeft, sessionId, score, history, feedback]);
 
     const handleQuit = () => {
         clearSession();
@@ -128,18 +173,88 @@ export default function GamePage() {
             if (response.ok) {
                 const data = await response.json();
 
-                if (data.isCorrect) {
-                    setFeedback('correct');
-                } else {
-                    setFeedback('incorrect');
-                    setBackendCorrectAnswer(data.correctAnswer);
+                if (question) {
+                    const historyItem: SessionHistoryItem = {
+                        question,
+                        submittedAnswer: answer.trim(),
+                        isCorrect: data.isCorrect
+                    };
+                    const newHistory = [...history, historyItem];
+                    setHistory(newHistory);
+
+                    if (data.isCorrect) {
+                        const points = (question.difficulty || 0) >= 50 ? 1 : 2;
+                        const newScore = score + points;
+                        setScore(newScore);
+                        setFeedback('correct');
+
+                        // Update localStorage immediately with the NEXT question to prevent re-answering on refresh
+                        const nextDifficulty = Math.max(1, (question.difficulty || 90) - 10);
+                        
+                        // We fetch the next question now and save it to session
+                        try {
+                            const nextResp = await fetch(`/api/questions?percentage=${nextDifficulty}&next=true`);
+                            if (nextResp.ok) {
+                                const nextData = await nextResp.json();
+                                // Save NEXT question to session state and localStorage
+                                if (sessionId) {
+                                    saveSession({
+                                        sessionId,
+                                        question: nextData,
+                                        timeLeft: 60,
+                                        score: newScore,
+                                        history: newHistory,
+                                        status: 'playing'
+                                    });
+                                }
+                                // We update the question state AFTER the timeout in the effect
+                                // BUT we actually need to update it here so the effect knows what the current question is
+                                // or we can just let the timeout handle the UI state update.
+                                // Let's update the question state after 3s so the user still sees the "Correct" overlay on the current question.
+                                setTimeout(() => {
+                                    setQuestion(nextData);
+                                }, 3000);
+                            } else {
+                                // If no more questions, end game
+                                if (sessionId) {
+                                    saveSession({
+                                        sessionId,
+                                        question,
+                                        timeLeft: 0,
+                                        score: newScore,
+                                        history: newHistory,
+                                        status: 'ended'
+                                    });
+                                }
+                                router.push('/game/solo/results');
+                            }
+                        } catch (error) {
+                            console.error("Error fetching next question:", error);
+                            router.push('/game/solo/results');
+                        }
+                    } else {
+                        setFeedback('incorrect');
+                        setBackendCorrectAnswer(data.correctAnswer);
+                        
+                        // Mark session as ended immediately
+                        if (sessionId) {
+                            saveSession({
+                                sessionId,
+                                question,
+                                timeLeft,
+                                score,
+                                history: newHistory,
+                                status: 'ended'
+                            });
+                        }
+                    }
                 }
             } else {
                 console.error("Failed to submit answer");
-                setIsSubmitting(false);
             }
         } catch (error) {
             console.error("Error submitting answer:", error);
+        } finally {
             setIsSubmitting(false);
         }
     };

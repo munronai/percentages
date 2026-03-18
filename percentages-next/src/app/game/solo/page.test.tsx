@@ -75,7 +75,7 @@ describe('Game Page - Solo Mode', () => {
         const mockQuestionWithImage = {
             questionId: "q-80-001",
             text: "What do you see in this picture?",
-            imageUrl: "https://example.com/mock-image.png",
+            imageUrl: "https://placehold.co/600x400/purple/white?text=Hidden+Face+Puzzle",
             correctAnswer: "Hidden Face",
             difficulty: 80
         };
@@ -93,7 +93,7 @@ describe('Game Page - Solo Mode', () => {
 
         const image = screen.getByRole('img', { name: "Question Image" });
         expect(image).toBeInTheDocument();
-        expect(image).toHaveAttribute('src', "https://example.com/mock-image.png");
+        expect(image).toHaveAttribute('src', "https://placehold.co/600x400/purple/white?text=Hidden+Face+Puzzle");
     });
 
     it('starts a 60-second timer upon data load', async () => {
@@ -165,25 +165,39 @@ describe('Game Page - Solo Mode', () => {
 
         jest.useRealTimers();
     });
-    it('renders correct feedback overlay and waits without routing yet', async () => {
-        const mockQuestion = {
+    it('renders correct feedback overlay, updates score, and transitions to next difficulty', async () => {
+        jest.useFakeTimers();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        const mockQuestion1 = {
             questionId: "q-90-001",
-            text: "Testing submission",
+            text: "Question 1",
             imageUrl: null,
-            correctAnswer: "Test",
+            correctAnswer: "Ans1",
             difficulty: 90
         };
 
+        const mockQuestion2 = {
+            questionId: "q-80-001",
+            text: "Question 2",
+            imageUrl: null,
+            correctAnswer: "Ans2",
+            difficulty: 80
+        };
+
         (global.fetch as jest.Mock).mockImplementation(async (url) => {
-            if (url.includes('/api/questions')) {
-                return { ok: true, json: async () => mockQuestion };
+            if (url.includes('/api/questions?percentage=90')) {
+                return { ok: true, json: async () => mockQuestion1 };
+            }
+            if (url.includes('/api/questions?percentage=80')) {
+                return { ok: true, json: async () => mockQuestion2 };
             }
             if (url.includes('/api/game/answer')) {
                 return {
                     ok: true, json: async () => ({
                         success: true,
                         isCorrect: true,
-                        correctAnswer: 'Test',
+                        correctAnswer: 'Ans1',
                         isEliminated: false
                     })
                 };
@@ -192,20 +206,98 @@ describe('Game Page - Solo Mode', () => {
         });
 
         render(<GamePage />);
-        await screen.findByText(/Testing submission/i);
+        await screen.findByText(/Question 1/i);
 
         const input = screen.getByPlaceholderText(/Enter your answer/i);
         const submitBtn = screen.getByRole('button', { name: /Submit/i });
 
-        await userEvent.type(input, "Test");
-        await userEvent.click(submitBtn);
+        await user.type(input, "Ans1");
+        await user.click(submitBtn);
 
         // Assert feedback overlay appears
         expect(await screen.findByText(/Correct!/i)).toBeInTheDocument();
 
-        // Assert form inputs are disabled
-        expect(input).toBeDisabled();
-        expect(submitBtn).toBeDisabled();
+        // Advance 3 seconds
+        act(() => {
+            jest.advanceTimersByTime(3000);
+        });
+
+        // Should fetch next question at 80% difficulty
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledWith('/api/questions?percentage=80&next=true');
+        });
+
+        // Should display next question
+        expect(await screen.findByText(/Question 2/i)).toBeInTheDocument();
+
+        // Session should be saved with score 1
+        expect(saveSession).toHaveBeenCalledWith(expect.objectContaining({
+            score: 1
+        }));
+
+        jest.useRealTimers();
+    });
+
+    it('awards 2 points for questions with difficulty < 50%', async () => {
+        jest.useFakeTimers();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        const mockQuestion = {
+            questionId: "q-10-001",
+            text: "Hard Question",
+            imageUrl: null,
+            correctAnswer: "HardAns",
+            difficulty: 10
+        };
+
+        // Initialize with a session at difficulty 10
+        (getSession as jest.Mock).mockReturnValue({
+            sessionId: 'test-session',
+            question: mockQuestion,
+            timeLeft: 60,
+            score: 5
+        });
+
+        (global.fetch as jest.Mock).mockImplementation(async (url) => {
+            if (url.includes('/api/game/answer')) {
+                return {
+                    ok: true, json: async () => ({
+                        success: true,
+                        isCorrect: true,
+                        correctAnswer: 'HardAns',
+                        isEliminated: false
+                    })
+                };
+            }
+            if (url.includes('/api/questions')) {
+                return { ok: true, json: async () => ({ ...mockQuestion, questionId: 'next' }) };
+            }
+            return { ok: false };
+        });
+
+        render(<GamePage />);
+        await screen.findByText(/Hard Question/i);
+
+        const input = screen.getByPlaceholderText(/Enter your answer/i);
+        const submitBtn = screen.getByRole('button', { name: /Submit/i });
+
+        await user.type(input, "HardAns");
+        await user.click(submitBtn);
+
+        expect(await screen.findByText(/Correct!/i)).toBeInTheDocument();
+
+        act(() => {
+            jest.advanceTimersByTime(3000);
+        });
+
+        // Score was 5, should now be 7 (5 + 2)
+        await waitFor(() => {
+            expect(saveSession).toHaveBeenCalledWith(expect.objectContaining({
+                score: 7
+            }));
+        });
+
+        jest.useRealTimers();
     });
 
     it('renders incorrect feedback and correct answer on failed submission, then routes to results', async () => {
@@ -416,31 +508,99 @@ describe('Game Page - Solo Mode', () => {
         }));
     });
 
-    it('clears session and routes home when Quit Game is clicked', async () => {
-        const mockSession = {
-            sessionId: 'existing-session',
-            question: {
-                questionId: 'q-90-002',
-                text: 'Test question from session?',
-                imageUrl: null,
-                correctAnswer: 'X',
-                difficulty: 80
-            },
-            timeLeft: 35
+    it('records question and answer in session history after submission', async () => {
+        jest.useFakeTimers();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        const mockQuestion = {
+            questionId: "q-90-001",
+            text: "Question 1",
+            imageUrl: null,
+            correctAnswer: "Ans1",
+            difficulty: 90
         };
 
-        (getSession as jest.Mock).mockReturnValue(mockSession);
+        (global.fetch as jest.Mock).mockImplementation(async (url) => {
+            if (url.includes('/api/questions')) {
+                return { ok: true, json: async () => mockQuestion };
+            }
+            if (url.includes('/api/game/answer')) {
+                return {
+                    ok: true, json: async () => ({
+                        success: true,
+                        isCorrect: true,
+                        correctAnswer: 'Ans1',
+                        isEliminated: false
+                    })
+                };
+            }
+            return { ok: false };
+        });
 
         render(<GamePage />);
+        await screen.findByText(/Question 1/i);
 
-        // Wait to load
-        await screen.findByText(/Test question from session?/i);
+        const input = screen.getByPlaceholderText(/Enter your answer/i);
+        const submitBtn = screen.getByRole('button', { name: /Submit/i });
 
-        // Find and click Quit button
-        const quitButton = await screen.findByRole('button', { name: /quit game/i });
-        await userEvent.click(quitButton);
+        await user.type(input, "My Answer");
+        await user.click(submitBtn);
 
-        expect(clearSession).toHaveBeenCalled();
-        expect(mockPush).toHaveBeenCalledWith('/');
+        // Session should be saved with history item
+        expect(saveSession).toHaveBeenCalledWith(expect.objectContaining({
+            history: expect.arrayContaining([
+                expect.objectContaining({
+                    question: mockQuestion,
+                    submittedAnswer: "My Answer",
+                    isCorrect: true
+                })
+            ])
+        }));
+
+        jest.useRealTimers();
+    });
+
+    it('records timeout in session history', async () => {
+        jest.useFakeTimers();
+
+        const mockQuestion = {
+            questionId: 'q-90-002',
+            text: 'Wait for time out',
+            imageUrl: null,
+            correctAnswer: 'X',
+            difficulty: 80
+        };
+
+        (getSession as jest.Mock).mockReturnValue({
+            sessionId: 'existing-session',
+            question: mockQuestion,
+            timeLeft: 1,
+            score: 0,
+            history: []
+        });
+
+        render(<GamePage />);
+        await screen.findByText(/Wait for time out/i);
+
+        act(() => {
+            jest.advanceTimersByTime(1000);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Time's Up!/i)).toBeInTheDocument();
+        });
+
+        // Session should be saved with history item for timeout
+        expect(saveSession).toHaveBeenCalledWith(expect.objectContaining({
+            history: expect.arrayContaining([
+                expect.objectContaining({
+                    question: mockQuestion,
+                    submittedAnswer: null,
+                    isCorrect: false
+                })
+            ])
+        }));
+
+        jest.useRealTimers();
     });
 });
