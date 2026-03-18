@@ -29,8 +29,15 @@ export default function HomePage() {
                 <p className="text-xl text-gray-400">Step right up to the game lobby.</p>
             </div>
 
-            <div className="w-full max-w-sm pt-8">
+            <div className="w-full max-w-sm pt-8 space-y-4">
                 <StartGameButton />
+                
+                <button
+                    onClick={() => router.push('/multiplayer')}
+                    className="w-full py-4 px-8 font-bold text-lg rounded-xl shadow-xl transform transition-all duration-200 ring-1 ring-white/20 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white hover:scale-[1.02] active:scale-[0.98]"
+                >
+                    Multiplayer
+                </button>
             </div>
         </div>
     )

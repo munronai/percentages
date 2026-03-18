@@ -42,4 +42,11 @@ describe('Home Page', () => {
         expect(clearSession).toHaveBeenCalled();
         expect(mockPush).toHaveBeenCalledWith('/');
     });
+
+    it('navigates to /multiplayer on Multiplayer button click', async () => {
+        render(<HomePage />);
+        const multiBtn = screen.getByRole('button', { name: /Multiplayer/i });
+        await userEvent.click(multiBtn);
+        expect(mockPush).toHaveBeenCalledWith('/multiplayer');
+    });
 });
