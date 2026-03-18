@@ -302,3 +302,11 @@ The Question Service will expose the following key endpoints:
 | US-Q4 | As a developer, I want the Question Database API to be described using OpenAPI Specification so I can easily integrate the UI and GMS. | High | QS-05 |
 | US-Q5 | As an admin, I want to use an API to retrieve all questions, with pagination, so that I can manage the question database. | Medium | QS-05 |
 | US-Q6 | As an admin, I want to use an API to trigger the generation of a new question to test the AI model or seed the database. | Low | QS-05 |
+
+### Multiplayer & Decentralization
+| ID | User Story | Priority | Feature ID |
+|---|---|---|---|
+| US-M1 | As a player, I want to create or find a game room using a human-readable code so I can easily play with friends or join public sessions. | High | Feature 1 |
+| US-M2 | As a participant, I want to see a list of players and use a chat function in the lobby so I can communicate before the game starts. | Medium | Feature 1 |
+| US-M3 | As a player, I want the game to automatically elect a new host if the current host leaves so my session is not interrupted. | High | Feature 1 |
+| US-M4 | As a player, I want to see the same question, timer, and results as all other participants so the game is fair and competitive. | High | Feature 1, 2 |
