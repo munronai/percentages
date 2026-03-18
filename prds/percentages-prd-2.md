@@ -71,49 +71,41 @@ To launch a successful quiz application that provides a unique and engaging expe
 ## Proposed Solution
 
 ### Overview
-A mobile and web application that allows users to play a quiz game based on logic puzzles. The game can be played solo or in a live session with up to 100 players. A key feature is the dynamic question system, which uses an AI agent to generate new questions, ensuring fresh content.
+A mobile and web application that allows users to play a quiz game based on logic puzzles. The game can be played solo or in a live session with up to 100 players. The multiplayer architecture is decentralized: there is no central game server. Instead, a **Host Player** acts as the authoritative server for the session. To ensure session continuity, the system supports **Host Migration**, allowing another player to take over the "server" role if the original host disconnects.
 
 ### Key Features & Functionality
 
-#### Feature 1: Game Session Management
-**Description**: Users can join a game session or start a new one. A host can control the start of the game.
-**User Value**: Enables both solo play and multiplayer experiences.
+#### Feature 1: Decentralized Game Session Management
+**Description**: Users can host a new game or join an existing one. Discovery occurs via a shared messaging channel (e.g., WebSockets) rather than a central database of sessions.
+**User Value**: Enables low-latency multiplayer without a heavy backend, while providing resilience against host failure.
 **Priority**: Must Have
 
 **User Flow**:
-1. Users can create a new game session (becoming the host) or join an existing one.
-2. Players can browse a list of active, open sessions. This list should include the session name (if provided by the host), the current number of players, and the maximum player capacity.
-3. A search and filter function could allow players to quickly find sessions based on criteria like game mode or friends-only status.
-4. The session is initiated by the host once the minimum player count is met and the host manually starts the game, or after a set countdown timer when the maximum player count is reached.
-5. The session is closed to new joiners once the game starts. Supports 1 to 100 players.
+1. **Discovery**: When the app starts, it listens to a global "Game Channel." It broadcasts a "Who is hosting?" message and displays a list of active games that respond.
+2. **Hosting**: A user creates a room. The app broadcasts a "New Game: [Code] [Name]" message. This client now manages the game state and timer for all peers.
+3. **Joining**: Players enter a Room Code to join a specific peer-hosted session.
+4. **Host Migration**: If the Host's heartbeat stops, the remaining peers elect a new Host based on a shared state, ensuring the game continues without interruption.
 
 **Acceptance Criteria**:
-- [ ] A user can start and complete a solo game.
-- [ ] A user can create a multiplayer game lobby.
-- [ ] Multiple users can join the lobby.
-- [ ] The host can start the game, preventing new users from joining.
+- [ ] A user can broadcast their game to the shared channel.
+- [ ] Players can see a list of available games populated by channel messages.
+- [ ] Game state (timer, active players) is synchronized across all peers via the messaging bus.
+- [ ] Session persists if the original host drops (Host Migration).
 
-#### Feature 2: Question & Answer UI
-**Description**: A clean interface to display the question (text and/or image) and a 60-second timer.
-**User Value**: Provides a clear and time-bound interface for answering questions.
+#### Feature 2: Question & Answer UI (Security Enhanced)
+**Description**: A clean interface for questions and answers. Answers are retrieved separately and encrypted/encoded to prevent client-side peeking in a decentralized environment.
+**User Value**: Provides a fair, competitive environment where the Host doesn't have an unfair advantage.
 **Priority**: Must Have
 
 **User Flow**:
-1. A new question is displayed.
-2. The 60-second timer begins to count down.
-3. The user inputs their answer.
-4. If the user inputs the correct answer then, the timer stops, the answer is displayed, and the user is successful.
-5. If the user inputs the incorrect answer then the timer stops, the answer is displayed, and the user has failed.
-6. When the timer ends, the input is disabled, the answer is displayed, and the user has failed.
-
-
+1. The Host fetches a question and its encrypted answer from the Question Service.
+2. The Host broadcasts the question to all peers via the messaging channel.
+3. Once the 60-second timer expires, the Host broadcasts the decryption key or encoded answer for local validation on each client.
 
 **Acceptance Criteria**:
-- [ ] Questions with both text and images can be displayed correctly.
-- [ ] The timer is clearly visible and counts down accurately.
-- [ ] The user success is displayed if the user is correct.
-- [ ] The user failure is displayed is the user in incorrect or does not answer within 60 seconds.
-- [ ] Answer input is disabled after 60 seconds.
+- [ ] Questions and answers are handled as separate entities in the API.
+- [ ] Answer validation is secure even though the Host is another player's client.
+- [ ] Timer is synchronized across all peers.
 
 
 #### Feature 3: AI-Powered Question Service
@@ -181,53 +173,48 @@ A mobile and web application that allows users to play a quiz game based on logi
 
 ## Technical Considerations
 
-### Architecture Overview
-The system will employ a decoupled, microservice architecture, separating the front-end UI from the back-end Game Management Service (GMS) and the Question Service (QS).
+### Architecture Overview: Decentralized "Listen Server"
+The system utilizes a **Decentralized Peer-to-Peer (P2P) Hybrid** model. Instead of a central Game Management Service, the "Server" logic runs inside the Host's browser/app.
 
-- **Frontend (UI)**: A single-page application handling all user-facing views and interactions.
-- **Game Management Service (GMS)**: Handles player sessions, game state, timer logic, answer validation, and elimination.
-- **Question Service (QS)**: Acts as a facade for question retrieval, abstracting the source (database vs. AI generation).
+- **Frontend (Client)**: Every client contains both the "Player" logic and the "Host/Server" logic (activated only if they are the current Host).
+- **Messaging Channel (Relay)**: A lightweight WebSocket-based relay (e.g., Socket.io or similar) handles message passing between peers. It does not store game state; it only broadcasts messages.
+- **Question Service (QS)**: A central REST API that provides logic puzzles. It is "stateless" regarding the game session.
 
 ### Component Details
 
-#### Front-end (UI)
-- **Technology**: React, Next.js or Vue.js for a responsive single-page application experience.
-- **Communication**: 
-  - **WebSockets** for real-time game updates and scalability (timer countdown, question reveals, elimination status).
-  - **REST API** calls to the GMS for control actions (e.g., signing up, submitting an answer).
-- **Views**: Sign-up/Lobby View, Contestant Game View, Host Control Panel View.
+#### Real-time Messaging Channel
+- **Technology**: WebSocket Relay (Pub/Sub model).
+- **Logic**: 
+  - **Broadcasts**: "Game Created," "Who is Hosting?", "New Question," "Timer Sync," "Player Eliminated."
+  - **Liveness**: Hosts send a frequent heartbeat. If the heartbeat fails, peers initiate a migration protocol.
 
-#### Game Management Service (GMS)
-- **Technology**: Node.js or Python for rapid prototyping and handling asynchronous I/O. Consider conversion to golang or Rust for performance and scale following successful prototyping.
-- **Dependencies**: Player/Session Database (PSD) and Question Service (QS).
-- **Key Logic**: Manages the 60-second timer per question, validates answers retrieved from QS, and updates player status in the PSD.
+#### Host Migration & State Synchronization
+- **State Replication**: The current Host broadcasts a "State Snapshot" (active players, scores, question index) periodically. Every player maintains a local copy of the full game state.
+- **Migration Protocol**: If the Host drops (heartbeat timeout), the remaining peers elect a new Host based on a deterministic rule (e.g., longest connection duration) to resume the session.
 
-#### Question Service (QS)
-- **Technology**: Node.js, Java, or Go (focus on fast API response).
-- **API Specification**: Must adhere to the OpenAPI Specification (OAS).
-- **Key Logic**: Implements the 1:3 (Database:AI) retrieval logic. If an AI question is generated, it is first persisted to the Question Database (QDB) before being returned to the GMS.
-- **AI Question generation**: Model selection to be balanced with cost.
+#### Secure Question Fetching
+- **Separation of Concerns**: The Question Service provides a `question_payload` (visible) and an `answer_hash` or `encrypted_answer`.
+- **Validation**: Answers are only decrypted locally once the timer ends, or the Host releases the key, ensuring even the Host cannot "cheat" easily during the 60s window.
 
 #### Databases
 - **Question Database (QDB)**: 
   - **Purpose**: Storage for existing and newly generated questions.
-  - **Technology**: PostgreSQL (for structured question data and reliability).
-- **Player/Session Database (PSD)**: 
-  - **Purpose**: Storage for user profiles, current game sessions, and player status (active/eliminated).
-  - **Technology**: MongoDB (for flexible session tracking) or Redis (for high-speed session state).
+  - **Technology**: PostgreSQL.
+- **Session Messaging**: 
+  - **Purpose**: Signaling and message relay.
+  - **Technology**: Redis or a managed WebSocket service (e.g., Ably, PubNub) to handle global message broadcasting.
 
 ### API Specification Outline (for Question Service)
 The Question Service will expose the following key endpoints:
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/questions/{question-id}` | GET | Retrieves a specific question for the specified `question-id` |
-| `/questions` | GET | Retrieves all questions in the database (pagination support required.) |
-| `/questions?percentage={percentage}` | GET | Retrieves all questions for the specified `percentage` difficulty (pagination support required.) |
-| `/questions/{percentage}` | GET | Retrieves a question for the specified percentage difficulty, selected based on the 1:3 (DB:AI) ratio. |
-| `/questions/{question-id}/validation` | POST | Validates a player's submitted answer against the correct answer for a given `question_id`. |
-| `/questions` | POST | Used internally or by an admin tool to add new questions to the QDB. Request body specifies the question and answer being added|
-| `/generated-questions` | POST | Used internally or by an admin tool to request a new AI-generated question|
+| `/questions/{id}` | GET | Retrieves a question payload (text/image) |
+| `/answers/{id}` | GET | Retrieves the encrypted or hashed answer |
+| `/questions?percentage={p}` | GET | Retrieves questions for the specified difficulty level |
+| `/questions/{p}` | GET | Retrieves a single question based on 1:3 ratio |
+| `/questions` | POST | Admin: Add new questions to the database |
+| `/generated-questions` | POST | Admin/Internal: Trigger AI question generation |
 
 ### Dependencies
 | Dependency | Owner | Status | Risk Level |
@@ -253,14 +240,20 @@ The Question Service will expose the following key endpoints:
 - AI question generation.
 - Public API for the question database.
 
-### Phase 2: Multiplayer and Host Controls
+### Phase 2: Decentralized Multiplayer & AI Generation
 **Target Date**: End of Q2
-**Goal**: Enable the social and competitive aspect of the game.
+**Goal**: Launch the P2P multiplayer experience with resilient discovery and AI question generation.
 
-**Planned Features**:
-- Game lobby and session management.
-- Host controls.
-- Scoring and results screen.
+**In Scope**:
+- Global messaging channel for peer signaling.
+- Room discovery via broadcast/listen protocol.
+- Host Migration logic to handle host disconnects.
+- Encrypted answer distribution and validation.
+- AI question generation and database integration.
+
+**Out of Scope**:
+- Advanced anti-cheat (beyond basic encryption).
+- Global matchmaking (simple lobby discovery instead).
 
 ---
 
