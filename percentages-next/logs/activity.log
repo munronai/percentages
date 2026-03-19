@@ -1,1 +1,3 @@
 [2026-03-19T09:26:44.027Z] INFO: User Login {"playerName":"Melanie"}
+[2026-03-19T09:40:00.490Z] INFO: User Login {"playerName":"Melanie"}
+[2026-03-19T09:46:18.999Z] INFO: WebSocket Message: JOIN_ROOM {"roomCode":"VIOLET-FALCON","playerName":"Melanie","sender":"2v62NPQ0fSgIbwI3AAAB","timestamp":"2026-03-19T09:46:18.998Z"}
