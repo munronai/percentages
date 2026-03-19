@@ -12,6 +12,7 @@ export default function GameReviewPage() {
     useEffect(() => {
         const session = getSession();
         if (session && session.history) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setHistory(session.history);
         }
         setLoading(false);

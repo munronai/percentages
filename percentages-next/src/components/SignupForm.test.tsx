@@ -26,13 +26,20 @@ test('shows error when submitting empty name', async () => {
     expect(screen.getByText(/name is required/i)).toBeInTheDocument()
 })
 
-test('saves name and redirects on valid submission', async () => {
+test('saves name, logs login, and redirects on valid submission', async () => {
+    // Mock fetch for logging
+    global.fetch = jest.fn().mockResolvedValue({ ok: true });
+
     localStorage.clear()
     render(<SignupForm />)
     await userEvent.type(screen.getByLabelText(/display name/i), 'Alex')
     await userEvent.click(screen.getByRole('button', { name: /continue/i }))
 
     expect(localStorage.getItem('playerName')).toBe('Alex')
+    expect(global.fetch).toHaveBeenCalledWith('/api/admin/log', expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"message":"User Login"')
+    }));
     expect(mockPush).toHaveBeenCalledWith('/home')
 })
 

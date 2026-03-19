@@ -12,6 +12,7 @@ export default function ResultsPage() {
     useEffect(() => {
         const session = getSession();
         if (session) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setScore(session.score || 0);
         }
     }, []);
