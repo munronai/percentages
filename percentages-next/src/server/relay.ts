@@ -35,12 +35,13 @@ io.on('connection', (socket) => {
     socket.onAny(async (event, data) => {
         if (event === "JOIN_ROOM" || event === "disconnect") return;
 
+        const safeData = data || {};
         const info = socketRegistry.get(socket.id);
         const logContext = {
-            ...data,
+            ...safeData,
             senderId: socket.id,
             playerName: info?.playerName,
-            roomCode: data.roomCode || info?.roomCode
+            roomCode: safeData.roomCode || info?.roomCode
         };
 
         // Log to file
