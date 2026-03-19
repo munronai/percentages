@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
 
 export default function LobbyPage() {
     const router = useRouter();
@@ -11,9 +11,9 @@ export default function LobbyPage() {
     const roomCode = params?.roomCode as string;
     const isHost = searchParams?.get('host') === 'true';
     const isPublic = searchParams?.get('public') === 'true';
-    
+
     const [playerName, setPlayerName] = useState("");
-    const [socket, setSocket] = useState<Socket | null>(null);
+    const { socket } = useSocket();
     const [players, setPlayers] = useState<{name: string, id: string}[]>([]);
 
     useEffect(() => {
@@ -24,40 +24,68 @@ export default function LobbyPage() {
             return;
         }
 
-        const s = io("http://localhost:3001");
-        setSocket(s);
+        if (!socket) return;
 
         // Join room logic
-        s.emit("JOIN_ROOM", { roomCode, playerName: name });
+        socket.emit("JOIN_ROOM", { roomCode, playerName: name });
 
-        // Discovery & Heartbeat for Host
+        // Host logic for broadcasting state
+        let heartbeatInterval: any;
+
         if (isHost) {
+            // Add self to players list
+            setPlayers([{ name, id: socket.id || 'host' }]);
+
             // Initial announcement
             if (isPublic) {
-                s.emit("GAME_ANNOUNCEMENT", {
+                socket.emit("GAME_ANNOUNCEMENT", {
                     roomCode,
                     hostName: name,
-                    playerCount: 1, // Will be updated by server/peers in real implementation
+                    playerCount: 1,
                     maxPlayers: 100,
                     public: true
                 });
             }
 
             // Periodic heartbeat
-            const heartbeatInterval = setInterval(() => {
-                s.emit("HEARTBEAT", { roomCode, timestamp: Date.now() });
+            heartbeatInterval = setInterval(() => {
+                socket.emit("HEARTBEAT", { roomCode, timestamp: Date.now() });
             }, 5000);
-
-            return () => {
-                clearInterval(heartbeatInterval);
-                s.disconnect();
-            };
         }
 
-        return () => {
-            s.disconnect();
+        // Handle peer events
+        const handlePlayerJoined = (data: { playerName: string, id: string }) => {
+            setPlayers((prev) => {
+                if (prev.find(p => p.id === data.id)) return prev;
+                const newPlayers = [...prev, { name: data.playerName, id: data.id }];
+                
+                // If host, broadcast the updated list to everyone in the room
+                if (isHost) {
+                    socket.emit("PLAYER_LIST_UPDATE", {
+                        roomCode,
+                        players: newPlayers
+                    });
+                }
+                
+                return newPlayers;
+            });
         };
-    }, [roomCode, isHost, isPublic, router]);
+
+        const handlePlayerListUpdate = (data: { players: {name: string, id: string}[] }) => {
+            if (!isHost) {
+                setPlayers(data.players);
+            }
+        };
+
+        socket.on("PLAYER_JOINED", handlePlayerJoined);
+        socket.on("PLAYER_LIST_UPDATE", handlePlayerListUpdate);
+
+        return () => {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            socket.off("PLAYER_JOINED", handlePlayerJoined);
+            socket.off("PLAYER_LIST_UPDATE", handlePlayerListUpdate);
+        };
+    }, [roomCode, isHost, isPublic, router, socket]);
 
     return (
         <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center">
@@ -77,14 +105,15 @@ export default function LobbyPage() {
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 py-4">
-                        {/* Placeholder for players list */}
-                        <div className="p-4 bg-black border border-gray-800 rounded-xl flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold">
-                                {playerName.charAt(0)}
+                        {players.map((p) => (
+                            <div key={p.id} className="p-4 bg-black border border-gray-800 rounded-xl flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xs font-bold uppercase">
+                                    {p.name.charAt(0)}
+                                </div>
+                                <span className="font-medium truncate">{p.name}</span>
+                                {p.id === socket?.id && <span className="text-[8px] text-gray-500 font-bold uppercase ml-auto">You</span>}
                             </div>
-                            <span className="font-medium truncate">{playerName}</span>
-                            <span className="text-[10px] text-purple-400 font-bold uppercase">Host</span>
-                        </div>
+                        ))}
                     </div>
                 </div>
 

@@ -17,9 +17,15 @@ const mockSocket = {
     emit: jest.fn(),
     off: jest.fn(),
     disconnect: jest.fn(),
+    id: 'test-socket-id'
 };
-jest.mock('socket.io-client', () => ({
-    io: jest.fn(() => mockSocket)
+
+// Mock SocketContext
+jest.mock('@/context/SocketContext', () => ({
+    useSocket: () => ({
+        socket: mockSocket,
+        isConnected: true
+    })
 }));
 
 describe('Multiplayer Selection Page', () => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
 import { generateRoomCode } from "@/lib/roomCodes";
 
 interface PublicGame {
@@ -15,7 +15,7 @@ interface PublicGame {
 export default function MultiplayerPage() {
     const router = useRouter();
     const [playerName, setPlayerName] = useState("");
-    const [socket, setSocket] = useState<Socket | null>(null);
+    const { socket } = useSocket();
     const [publicGames, setPublicGames] = useState<PublicGame[]>([]);
     
     // Hosting state
@@ -34,12 +34,9 @@ export default function MultiplayerPage() {
             return;
         }
 
-        // Initialize WebSocket for discovery
-        // Point to our standalone relay server
-        const s = io("http://localhost:3001");
-        setSocket(s);
+        if (!socket) return;
 
-        s.on("GAME_ANNOUNCEMENT", (game: PublicGame) => {
+        const handleAnnouncement = (game: PublicGame) => {
             setPublicGames((prev) => {
                 const exists = prev.find(g => g.roomCode === game.roomCode);
                 if (exists) {
@@ -47,15 +44,17 @@ export default function MultiplayerPage() {
                 }
                 return [...prev, game];
             });
-        });
+        };
+
+        socket.on("GAME_ANNOUNCEMENT", handleAnnouncement);
 
         // Request active games upon joining the channel
-        s.emit("DISCOVERY_REQUEST");
+        socket.emit("DISCOVERY_REQUEST");
 
         return () => {
-            s.disconnect();
+            socket.off("GAME_ANNOUNCEMENT", handleAnnouncement);
         };
-    }, [router]);
+    }, [router, socket]);
 
     const handleHostNewGame = () => {
         setRoomCode(generateRoomCode());
