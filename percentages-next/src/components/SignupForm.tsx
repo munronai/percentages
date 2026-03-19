@@ -21,7 +21,7 @@ export default function SignupForm() {
             return;
         }
         localStorage.setItem('playerName', name);
-        
+
         // Log the login activity
         try {
             await fetch('/api/admin/log', {

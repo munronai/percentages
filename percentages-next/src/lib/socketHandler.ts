@@ -1,6 +1,6 @@
 import { logActivity } from './logger';
 
-export async function handleSocketEvent(event: string, data: any, socketId: string): Promise<void> {
+export async function handleSocketEvent(event: string, data: Record<string, unknown>, socketId: string): Promise<void> {
     const metadata = {
         ...data,
         sender: socketId,

@@ -14,8 +14,7 @@ interface PublicGame {
 
 export default function MultiplayerPage() {
     const router = useRouter();
-    const [playerName, setPlayerName] = useState("");
-    const { socket } = useSocket();
+        const { socket } = useSocket();
     const [publicGames, setPublicGames] = useState<PublicGame[]>([]);
     
     // Hosting state
@@ -28,8 +27,7 @@ export default function MultiplayerPage() {
 
     useEffect(() => {
         const name = localStorage.getItem("playerName") || "";
-        setPlayerName(name);
-        if (!name) {
+                if (!name) {
             router.push("/");
             return;
         }

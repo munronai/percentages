@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path from 'path';
+
 import { logActivity } from './logger';
 
 // Mock fs to avoid actual file system writes during tests
@@ -24,7 +24,7 @@ describe('Logger Utility', () => {
     it('appends a formatted message to the log file', async () => {
         const message = 'Test activity';
         const metadata = { user: 'Alex', event: 'LOGIN' };
-        
+
         await logActivity(message, metadata);
 
         expect(appendFileSpy).toHaveBeenCalledWith(

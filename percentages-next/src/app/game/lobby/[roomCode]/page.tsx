@@ -12,14 +12,12 @@ export default function LobbyPage() {
     const isHost = searchParams?.get('host') === 'true';
     const isPublic = searchParams?.get('public') === 'true';
 
-    const [playerName, setPlayerName] = useState("");
-    const { socket } = useSocket();
+        const { socket } = useSocket();
     const [players, setPlayers] = useState<{name: string, id: string}[]>([]);
 
     useEffect(() => {
         const name = localStorage.getItem("playerName") || "";
-        setPlayerName(name);
-        if (!name) {
+                if (!name) {
             router.push("/");
             return;
         }
@@ -30,10 +28,11 @@ export default function LobbyPage() {
         socket.emit("JOIN_ROOM", { roomCode, playerName: name });
 
         // Host logic for broadcasting state
-        let heartbeatInterval: any;
+        let heartbeatInterval: NodeJS.Timeout;
 
         if (isHost) {
             // Add self to players list
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setPlayers([{ name, id: socket.id || 'host' }]);
 
             // Initial announcement
@@ -58,7 +57,7 @@ export default function LobbyPage() {
             setPlayers((prev) => {
                 if (prev.find(p => p.id === data.id)) return prev;
                 const newPlayers = [...prev, { name: data.playerName, id: data.id }];
-                
+
                 // If host, broadcast the updated list to everyone in the room
                 if (isHost) {
                     socket.emit("PLAYER_LIST_UPDATE", {
@@ -66,7 +65,7 @@ export default function LobbyPage() {
                         players: newPlayers
                     });
                 }
-                
+
                 return newPlayers;
             });
         };

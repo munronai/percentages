@@ -4,8 +4,8 @@
 Log player logins and WebSocket communication.
 
 ## Story Statement
-**As an** administrator/developer  
-**I want** the system to record player logins and WebSocket communication in a log file  
+**As an** administrator/developer
+**I want** the system to record player logins and WebSocket communication in a log file
 **So that** I can monitor application usage, debug messaging issues, and analyze game activity.
 
 ## Context & Background
@@ -46,5 +46,5 @@ Operational visibility is essential for maintaining a stable multiplayer experie
 
 ---
 
-**Created**: 2026-03-18  
-**Author**: Gemini  
+**Created**: 2026-03-18
+**Author**: Gemini

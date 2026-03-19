@@ -46,9 +46,9 @@ io.on('connection', (socket) => {
         const { roomCode, playerName } = data;
         socket.join(roomCode);
         socketRegistry.set(socket.id, { playerName, roomCode });
-        
+
         console.log(`[Relay] > JOIN: ${playerName} (${socket.id}) joined room ${roomCode}`);
-        
+
         // Update player count in registry if it's a known lobby
         const lobby = lobbyRegistry.get(roomCode);
         if (lobby) {
@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
     socket.on("LEAVE_ROOM", async (data: { roomCode: string }) => {
         const { roomCode } = data;
         const info = socketRegistry.get(socket.id);
-        
+
         socket.leave(roomCode);
         if (info) info.roomCode = undefined;
 
@@ -128,18 +128,18 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const info = socketRegistry.get(socket.id);
         console.log(`[Relay] - DISCONNECTED: ${info?.playerName || socket.id} (${socket.id})`);
-        
+
         if (info?.roomCode) {
             const lobby = lobbyRegistry.get(info.roomCode);
             if (lobby) {
                 lobby.playerCount = Math.max(0, lobby.playerCount - 1);
-                // If the host disconnected, we could trigger migration here, 
+                // If the host disconnected, we could trigger migration here,
                 // but for now we just update count or let heartbeat prune it.
                 io.emit("GAME_ANNOUNCEMENT", lobby);
             }
             socket.to(info.roomCode).emit("PLAYER_LEFT", { id: socket.id });
         }
-        
+
         socketRegistry.delete(socket.id);
     });
 });

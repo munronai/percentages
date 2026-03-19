@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MultiplayerPage from './page';
-import { useRouter } from 'next/navigation';
+
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -75,8 +75,8 @@ describe('Multiplayer Selection Page', () => {
 
     it('displays discovered public games', async () => {
         // Mock the socket.on implementation to simulate receiving a game announcement
-        let announcementCallback: any;
-        mockSocket.on.mockImplementation((event: string, cb: any) => {
+        let announcementCallback: (data: Record<string, unknown>) => void;
+        mockSocket.on.mockImplementation((event: string, cb: (data: Record<string, unknown>) => void) => {
             if (event === 'GAME_ANNOUNCEMENT') announcementCallback = cb;
         });
 

@@ -77,7 +77,7 @@ describe('Lobby Page', () => {
 
     it('emits LEAVE_ROOM and navigates back on Leave Lobby click', async () => {
         render(<LobbyPage />);
-        
+
         const leaveBtn = screen.getByRole('button', { name: /Leave Lobby/i });
         await userEvent.click(leaveBtn);
 

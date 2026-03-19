@@ -32,6 +32,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setIsConnected(false);
         });
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSocket(s);
 
         return () => {

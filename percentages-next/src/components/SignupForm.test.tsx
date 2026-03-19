@@ -29,7 +29,7 @@ test('shows error when submitting empty name', async () => {
 test('saves name, logs login, and redirects on valid submission', async () => {
     // Mock fetch for logging
     global.fetch = jest.fn().mockResolvedValue({ ok: true });
-    
+
     localStorage.clear()
     render(<SignupForm />)
     await userEvent.type(screen.getByLabelText(/display name/i), 'Alex')

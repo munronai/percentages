@@ -10,7 +10,7 @@ describe('Multiplayer Relay Server', () => {
     let clientSocket1: ClientSocket;
     let clientSocket2: ClientSocket;
     let port: number;
-    let httpServer: any;
+    let httpServer: import("http").Server;
 
     beforeAll((done) => {
         httpServer = createServer();
@@ -20,7 +20,7 @@ describe('Multiplayer Relay Server', () => {
         httpServer.listen(() => {
             const address = httpServer.address();
             port = typeof address === 'string' ? 0 : address?.port || 0;
-            
+
             io.on('connection', (socket) => {
                 socket.onAny((event, data) => {
                     socket.broadcast.emit(event, data);
@@ -44,13 +44,13 @@ describe('Multiplayer Relay Server', () => {
             transports: ['websocket'],
             forceNew: true
         });
-        
+
         let connectedCount = 0;
         const onConnect = () => {
             connectedCount++;
             if (connectedCount === 2) done();
         };
-        
+
         clientSocket1.on('connect', onConnect);
         clientSocket2.on('connect', onConnect);
     });
@@ -62,7 +62,7 @@ describe('Multiplayer Relay Server', () => {
 
     it('relays GAME_ANNOUNCEMENT from one client to another', (done) => {
         const testData = { roomCode: 'TEST-ROOM', hostName: 'Host' };
-        
+
         clientSocket2.on('GAME_ANNOUNCEMENT', (data) => {
             expect(data).toEqual(testData);
             done();
@@ -73,7 +73,7 @@ describe('Multiplayer Relay Server', () => {
 
     it('relays HEARTBEAT to other clients', (done) => {
         const testData = { roomCode: 'TEST-ROOM' };
-        
+
         clientSocket2.on('HEARTBEAT', (data) => {
             expect(data).toEqual(testData);
             done();

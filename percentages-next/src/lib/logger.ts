@@ -4,7 +4,7 @@ import path from 'path';
 const LOG_DIR = path.join(process.cwd(), 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'activity.log');
 
-export async function logActivity(message: string, metadata: any = {}): Promise<void> {
+export async function logActivity(message: string, metadata: Record<string, unknown> = {}): Promise<void> {
     try {
         // Ensure logs directory exists
         if (!fs.existsSync(LOG_DIR)) {
