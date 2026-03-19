@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import LobbyPage from './page';
 import { useRouter, useParams } from 'next/navigation';
+import userEvent from '@testing-library/user-event';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -21,16 +22,26 @@ const mockSocket = {
     emit: jest.fn(),
     off: jest.fn(),
     disconnect: jest.fn(),
+    id: 'test-socket-id'
 };
-jest.mock('socket.io-client', () => ({
-    io: jest.fn(() => mockSocket)
+
+// Mock SocketContext
+jest.mock('@/context/SocketContext', () => ({
+    useSocket: () => ({
+        socket: mockSocket,
+        isConnected: true
+    })
 }));
 
 describe('Lobby Page', () => {
+    let mockPush: jest.Mock;
+
     beforeEach(() => {
         jest.clearAllMocks();
         localStorage.setItem('playerName', 'Alex');
         (useParams as jest.Mock).mockReturnValue({ roomCode: 'SILVER-FALCON' });
+        mockPush = jest.fn();
+        (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
     });
 
     it('renders the lobby with room code', () => {
@@ -62,5 +73,23 @@ describe('Lobby Page', () => {
         }));
         
         jest.useRealTimers();
+    });
+
+    it('emits LEAVE_ROOM and navigates back on Leave Lobby click', async () => {
+        render(<LobbyPage />);
+        
+        const leaveBtn = screen.getByRole('button', { name: /Leave Lobby/i });
+        await userEvent.click(leaveBtn);
+
+        expect(mockSocket.emit).toHaveBeenCalledWith('LEAVE_ROOM', expect.objectContaining({
+            roomCode: 'SILVER-FALCON'
+        }));
+        expect(mockPush).toHaveBeenCalledWith('/multiplayer');
+    });
+
+    it('enables Start Game button for host when 2+ players are present', async () => {
+        render(<LobbyPage />);
+        const startBtn = screen.getByRole('button', { name: /START GAME/i });
+        expect(startBtn).toBeDisabled();
     });
 });

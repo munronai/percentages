@@ -14,13 +14,28 @@ export default function SignupForm() {
         }
     }, [router]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) {
             setError('Name is required');
             return;
         }
         localStorage.setItem('playerName', name);
+        
+        // Log the login activity
+        try {
+            await fetch('/api/admin/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: 'User Login',
+                    metadata: { playerName: name }
+                })
+            });
+        } catch (error) {
+            console.error('Failed to log login:', error);
+        }
+
         router.push('/home');
     };
 

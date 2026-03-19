@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useSocket } from "@/context/SocketContext";
 import { generateRoomCode } from "@/lib/roomCodes";
 
 interface PublicGame {
@@ -15,7 +15,7 @@ interface PublicGame {
 export default function MultiplayerPage() {
     const router = useRouter();
     const [playerName, setPlayerName] = useState("");
-    const [socket, setSocket] = useState<Socket | null>(null);
+    const { socket } = useSocket();
     const [publicGames, setPublicGames] = useState<PublicGame[]>([]);
     
     // Hosting state
@@ -34,12 +34,9 @@ export default function MultiplayerPage() {
             return;
         }
 
-        // Initialize WebSocket for discovery
-        // In a real app, this would point to a relay server
-        const s = io();
-        setSocket(s);
+        if (!socket) return;
 
-        s.on("GAME_ANNOUNCEMENT", (game: PublicGame) => {
+        const handleAnnouncement = (game: PublicGame) => {
             setPublicGames((prev) => {
                 const exists = prev.find(g => g.roomCode === game.roomCode);
                 if (exists) {
@@ -47,15 +44,29 @@ export default function MultiplayerPage() {
                 }
                 return [...prev, game];
             });
-        });
+        };
+
+        const handleDiscoveryResponse = (games: PublicGame[]) => {
+            setPublicGames(games);
+        };
+
+        const handleGameRemoved = (data: { roomCode: string }) => {
+            setPublicGames((prev) => prev.filter(g => g.roomCode !== data.roomCode));
+        };
+
+        socket.on("GAME_ANNOUNCEMENT", handleAnnouncement);
+        socket.on("DISCOVERY_RESPONSE", handleDiscoveryResponse);
+        socket.on("GAME_REMOVED", handleGameRemoved);
 
         // Request active games upon joining the channel
-        s.emit("DISCOVERY_REQUEST");
+        socket.emit("DISCOVERY_REQUEST");
 
         return () => {
-            s.disconnect();
+            socket.off("GAME_ANNOUNCEMENT", handleAnnouncement);
+            socket.off("DISCOVERY_RESPONSE", handleDiscoveryResponse);
+            socket.off("GAME_REMOVED", handleGameRemoved);
         };
-    }, [router]);
+    }, [router, socket]);
 
     const handleHostNewGame = () => {
         setRoomCode(generateRoomCode());
