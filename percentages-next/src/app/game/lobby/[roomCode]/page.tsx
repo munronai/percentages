@@ -24,7 +24,7 @@ export default function LobbyPage() {
             return;
         }
 
-        const s = io();
+        const s = io("http://localhost:3001");
         setSocket(s);
 
         // Join room logic

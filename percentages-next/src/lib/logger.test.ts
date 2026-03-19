@@ -2,13 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { logActivity } from './logger';
 
-// Mock fs.promises to avoid actual file system writes during tests
+// Mock fs to avoid actual file system writes during tests
 jest.mock('fs', () => ({
     ...jest.requireActual('fs'),
+    existsSync: jest.fn().mockReturnValue(false),
     promises: {
         appendFile: jest.fn().mockResolvedValue(undefined),
         mkdir: jest.fn().mockResolvedValue(undefined),
-        access: jest.fn().mockRejectedValue(new Error('File not found')), // Mock file not found by default
+        access: jest.fn().mockRejectedValue(new Error('File not found')),
     }
 }));
 

@@ -35,8 +35,8 @@ export default function MultiplayerPage() {
         }
 
         // Initialize WebSocket for discovery
-        // In a real app, this would point to a relay server
-        const s = io();
+        // Point to our standalone relay server
+        const s = io("http://localhost:3001");
         setSocket(s);
 
         s.on("GAME_ANNOUNCEMENT", (game: PublicGame) => {

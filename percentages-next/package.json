@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "relay": "ts-node src/server/relay.ts"
   },
   "dependencies": {
     "next": "16.1.6",
