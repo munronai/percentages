@@ -46,13 +46,25 @@ export default function MultiplayerPage() {
             });
         };
 
+        const handleDiscoveryResponse = (games: PublicGame[]) => {
+            setPublicGames(games);
+        };
+
+        const handleGameRemoved = (data: { roomCode: string }) => {
+            setPublicGames((prev) => prev.filter(g => g.roomCode !== data.roomCode));
+        };
+
         socket.on("GAME_ANNOUNCEMENT", handleAnnouncement);
+        socket.on("DISCOVERY_RESPONSE", handleDiscoveryResponse);
+        socket.on("GAME_REMOVED", handleGameRemoved);
 
         // Request active games upon joining the channel
         socket.emit("DISCOVERY_REQUEST");
 
         return () => {
             socket.off("GAME_ANNOUNCEMENT", handleAnnouncement);
+            socket.off("DISCOVERY_RESPONSE", handleDiscoveryResponse);
+            socket.off("GAME_REMOVED", handleGameRemoved);
         };
     }, [router, socket]);
 
