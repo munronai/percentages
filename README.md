@@ -62,6 +62,35 @@ Multiplayer:
 
 ## Tradeoffs and Decisions
 
+
+- **Delaying the implementation of AI-generated questions:**
+
+The intention was (and still is) to have AI-generated questions however there are multiple challenges that would have delayed the building of the app.
+- AI does not seem to be good at generating the puzzle/logic type of questions, never mind getting the level correct (90%, 80% and so on). The percentage is supposed to be based on the percentage of the population that can answer the question. This is difficult to test without extensive survey and therefore more difficult to do on the fly
+- To generate questions on the fly, we need to be confident in the question logic and difficulty and currently generating images on the fly for questions would be too slow
+- The (financial) cost of generating questions through an API needs to be evaluated
+
+- **What I'd do differently:**
+
+It's not so much a question of doing things differently. The intention to get something working remains. However, I think it would be easier to have AI-generated logic puzzles especially based on wordplay and drop the "strict" comparison/requirement with the percentage difficulty.
+
+- **Multiplayer using a relay:**
+
+A temporary decision to get something up and running. This resulted in a more "agile" iterative approach to the message design and how things should work. It has been a build-test-fix cycle. The relay server is a limiting factor for scalability. The ultimate goal is to use a pub/sub acrhitecture on a platform like Ably.
+
+- **What I'd do differently:**
+
+Take more time to design the architecture and the message content/intention before launching into the multiplayer build.
+
+- **Reliance on PRD and user stories to drive the build:**
+
+The approach has been to create the PRD (including iterations) and the user stories with AI assistance before asking the agent to develop a user story. This works but as the app gets more complex it is becoming difficult to easily know if I'm on the right track.
+
+- **What I'd do differently:**
+
+The next step (I think) will be a refactor. The codebase and the architecture requires better guidance, therefore there is a need to work on this and document how things should be structured (e.g. the aforementioned message use cases, the scalability).
+
+
 - **Why Gemini CLI over Claude Code:**
 
 I think Claude is more powerful/advanced but I wanted to see how Gemini coped with the same tasks and, I managed to get a reduced price for a few months of Google AI Pro!
@@ -75,6 +104,7 @@ While Jules could be used on any repo (and therefore code created by Claude), th
 
 ## What I Learned
 
+- There is more depth required for my approach. There is a great experience in requesting that the agent ask you questions - even if you know the answers, it helps to make sure the agent knows the answers. It is useful to use the scripted personas (e.g. Engineering Lead) to drive out concerns that can be forgotten during the process. Further depth would be in the use of sub agents to be more efficient - at the moment this is a single person with technology assistant approach; there are more effective ways to use the agent(s) as a team.
 - Gemini is currently (Mar 2026) not as capable (as Claude) when it comes to sub-agents that run in the background
 - When it comes to asking for development, I find that I am repeating some instructions (mainly around TDD). A skill is a next step for this to avoid repetition.
 - I have seen suggestions that PRDs and other documentation is less important in the context of the use of these CLI tools. I understand where that thinking comes from but I think the exercise of documenting and having the AI critique withn different personas remains a useful way of understanding the problem and what you intend to do.
