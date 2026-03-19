@@ -77,20 +77,57 @@ export default function LobbyPage() {
             }
         };
 
+        const handlePlayerLeft = (data: { id: string }) => {
+            setPlayers((prev) => {
+                const newList = prev.filter(p => p.id !== data.id);
+                if (isHost) {
+                    socket.emit("PLAYER_LIST_UPDATE", {
+                        roomCode,
+                        players: newList
+                    });
+                }
+                return newList;
+            });
+        };
+
         socket.on("PLAYER_JOINED", handlePlayerJoined);
         socket.on("PLAYER_LIST_UPDATE", handlePlayerListUpdate);
+        socket.on("PLAYER_LEFT", handlePlayerLeft);
 
         return () => {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             socket.off("PLAYER_JOINED", handlePlayerJoined);
             socket.off("PLAYER_LIST_UPDATE", handlePlayerListUpdate);
+            socket.off("PLAYER_LEFT", handlePlayerLeft);
         };
     }, [roomCode, isHost, isPublic, router, socket]);
 
+    const handleLeaveLobby = () => {
+        if (socket) {
+            socket.emit("LEAVE_ROOM", { roomCode });
+        }
+        router.push("/multiplayer");
+    };
+
+    const handleStartGame = () => {
+        if (socket && isHost) {
+            socket.emit("START_GAME", { roomCode });
+        }
+    };
+
+    const canStartGame = isHost && players.length >= 2;
+
     return (
         <div className="min-h-screen bg-black text-white p-8 flex flex-col items-center">
-            <div className="max-w-2xl w-full space-y-8 text-center">
-                <header className="space-y-2">
+            <div className="max-w-2xl w-full space-y-8 text-center relative">
+                <button
+                    onClick={handleLeaveLobby}
+                    className="absolute -top-4 -left-4 px-4 py-2 text-sm font-medium text-gray-400 bg-gray-900 border border-gray-800 rounded-lg hover:bg-gray-800 hover:text-white transition-all"
+                >
+                    Leave Lobby
+                </button>
+
+                <header className="space-y-2 pt-8">
                     <h1 className="text-sm font-bold text-purple-500 uppercase tracking-[0.2em]">Game Lobby</h1>
                     <div className="inline-block p-4 bg-gray-900 border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-500/10">
                         <p className="text-xs text-gray-500 uppercase font-black mb-1">Room Code</p>
@@ -119,8 +156,9 @@ export default function LobbyPage() {
 
                 {isHost && (
                     <button
-                        className="w-full py-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-xl rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-                        disabled
+                        onClick={handleStartGame}
+                        className={`w-full py-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-xl rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                        disabled={!canStartGame}
                     >
                         START GAME
                     </button>

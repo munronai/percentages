@@ -32,8 +32,20 @@ io.on('connection', (socket) => {
         socket.to(roomCode).emit("PLAYER_JOINED", { playerName, id: socket.id });
     });
 
+    socket.on("LEAVE_ROOM", async (data: { roomCode: string }) => {
+        const { roomCode } = data;
+        const info = socketRegistry.get(socket.id);
+        console.log(`[Relay] < LEAVE: ${info?.playerName || socket.id} left room ${roomCode}`);
+        
+        socket.leave(roomCode);
+        if (info) info.roomCode = undefined;
+
+        // Notify others
+        socket.to(roomCode).emit("PLAYER_LEFT", { id: socket.id });
+    });
+
     socket.onAny(async (event, data) => {
-        if (event === "JOIN_ROOM" || event === "disconnect") return;
+        if (event === "JOIN_ROOM" || event === "LEAVE_ROOM" || event === "disconnect") return;
 
         const safeData = data || {};
         const info = socketRegistry.get(socket.id);
@@ -61,6 +73,11 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const info = socketRegistry.get(socket.id);
         console.log(`[Relay] - DISCONNECTED: ${info?.playerName || socket.id} (${socket.id})`);
+        
+        if (info?.roomCode) {
+            socket.to(info.roomCode).emit("PLAYER_LEFT", { id: socket.id });
+        }
+        
         socketRegistry.delete(socket.id);
     });
 });
